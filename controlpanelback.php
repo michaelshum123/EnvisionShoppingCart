@@ -1,8 +1,8 @@
 <?php
-
+// Create connection
 require 'connect.php';
 //init vars
-$inFName = "";
+
 //$sql = "";
 //$result = "";
 
@@ -10,7 +10,7 @@ $inFName = "";
 //$result = $connection->query($sql);
 
 //command flags processed here
-$idCount = 0;
+
 foreach( $_GET as $cmd => $cmdVal ) {
     $cmdVal =  htmlspecialchars($cmdVal);
     
@@ -25,25 +25,25 @@ foreach( $_GET as $cmd => $cmdVal ) {
         // display csv table from filename
         if( $cmdVal == 2 ) {
             $fname = "";
-            if(isset($_GET['filename']) == TRUE) {
-                $fname =  $_GET['filename'] ;
+            if(isset($_GET['CSVfname']) == TRUE) {
+                $fname =  $_GET['CSVfname'] ;
             }
             displayCSV($fname);   
         }
         if( $cmdVal == 3 ) {
             echo  "
-            <div class=\"alert alert-success log-msg\" id=\"msg{$idCount}\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class=\"alert alert-success log-msg\" id=\"msg\">
+                <a href=\"#\" class=\"close fade in\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
                 <strong>Success!</strong> potatopotato clafairy poop 
             </div>";
-            $idCount++;
+            
         }
         break;
 
     case 'f':
         //import csv to db        
         if( $cmdVal == 1 ) {
-            CSVToDb( $_GET['filename'] ); 
+            CSVToDb( $_GET['CSVfname'], filter_var($_GET['duplicate'], FILTER_VALIDATE_BOOLEAN) ); 
         }
         
         //save db to csv
@@ -65,19 +65,20 @@ foreach( $_GET as $cmd => $cmdVal ) {
 
 
 // do functions here
-
+//TODO
 function deletePid($pidToDelete) {
+        global $connection;
         $sql = "DELETE FROM ProductTable WHERE id=".$_GET['pidToDelete']; // TODO: Change to prepared statement
     
         if ($connection->query($sql) === TRUE) {
             echo "
-            <div class=\"alert alert-success\" id=\"logMsg\">
+            <div class=\"alert alert-success log-msg\" id=\"logMsg\">
                 <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
                 <strong>Success!</strong> Product ID $pidToDelete has been deleted! 
             </div>"; 
         } else {
             echo "
-            <div class=\"alert alert-danger\" id=\"logMsg\">
+            <div class=\"alert alert-danger log-msg\" id=\"logMsg\">
                 <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
                 <strong>Success!</strong> Product ID $pidToDelete could not be deleted! $conn->error 
             </div>";
@@ -85,7 +86,10 @@ function deletePid($pidToDelete) {
         $idCount++;
 }
 
+
+//TODO
 function dbToCSV( $outFile ) {
+    global $connection;
     $success = TRUE;
     $sql = "SELECT id, name, descrip, quantity, price, descID FROM ProductTable"; 
     $result = $connection->query($sql);
@@ -136,7 +140,80 @@ function dbToCSV( $outFile ) {
             </div>"; 
 
     }
-    $idCount++;
+    
+    //free variables!! 
+    //$result->free();
+    //$sql->free();
+}
+
+
+//CSV to db import!!
+/*
+$owOrSkip - false = overwrite, true = skip
+-read CSV
+-for each line, check if in DB
+--OVERWRITE or SKIP !! 
+-if not in db, just add
+-logmsg
+*/
+function CSVToDb( $inFile, $owOrSkip ) {
+    global $connection;
+    
+    $sql = "SELECT id, name, descrip, quantity, price, descID FROM ProductTable"; 
+    $result = $connection->query($sql);
+    $nameColumn = array_column( $result->fetch_all(MYSQLI_ASSOC) , "name");
+
+    //<!--write data from db to csv-->
+    if ((file_exists($inFile) == TRUE) && (($inHandle = @fopen($inFile, "r")) !== FALSE)) {
+    
+        //read header row, ignore 
+        $data = fgetcsv($inHandle,600);
+    
+
+    while (($data = fgetcsv($inHandle, 600)) !== FALSE) {
+        
+        if( array_search($data[0], $nameColumn) !== FALSE ) {
+
+            //if found, check for update vs duplicate 
+            if( $owOrSkip === TRUE ) {
+                //found in name array + skip
+                continue;
+            } else {
+                //found in name array + overwrite
+                $sql = "UPDATE ProductTable
+                        SET descrip='{$data[1]}', quantity={$data[2]}, price={$data[3]}, descID={$data[4]}
+                        WHERE name='{$data[0]}'";
+                $connection->query($sql);
+            }
+        } else {
+            // add to db
+            $sql = "INSERT INTO ProductTable (name, descrip, quantity, price, descID)
+                    VALUES ('{$data[0]}' , '{$data[1]}', {$data[2]}, {$data[3]}, {$data[4]} );";
+            $connection->query($sql);
+        }
+    }
+    unset($data);
+    fclose($inHandle);
+
+   
+        echo "
+            <div class=\"alert alert-success fade in log-msg\" id=\"logMsg\">
+                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+                <strong>Success!</strong> {$inFile} has been imported!
+            </div>";
+    
+
+    }else{
+    //file did not open
+    echo " 
+            <div class=\"alert alert-danger fade in log-msg\" id=\"logMsg\">
+                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+                <strong>Failure!</strong> {$inFile} could not be loaded! Nothing has been imported.
+            </div>"; 
+    }
+
+    $result->free();
+    unset($nameColumn);
     //free variables!! 
     //$result->free();
     //$sql->free();
@@ -144,6 +221,8 @@ function dbToCSV( $outFile ) {
 //pRODUCT TABLE!!!
 
 function displayProductTable() {
+    global $connection;
+
     $sql = "SELECT id, name, descrip, quantity, price, descID FROM ProductTable"; 
     $result = $connection->query($sql);
     
@@ -152,7 +231,8 @@ if ($result->num_rows > 0) {
     echo
         "
         <h1>Product Table</h1>
-        <table class=\"table table-striped\">
+        <table class=\"table table-condensed table-bordered\">
+        <caption>Product Table</caption>
         <thead>
             <tr>
                 <th>ID</th>
@@ -180,7 +260,7 @@ if ($result->num_rows > 0) {
             <td>".$row['quantity']."</td>
             <td>".$row['price']."</td>
             <td>".$row['descID']."</td>
-            <td>
+            <td class=\"text-center\">
             <form action=\"".htmlspecialchars($_SERVER['PHP_SELF'])."\" method=\"get\">
             <input type=\"hidden\" name=\"pidToDelete\" value=".$row['id'].">
             <input type=\"hidden\" name=\"pNameToDelete\" value=\"".$row['name']."\">
@@ -207,12 +287,15 @@ function displayCSV( $inFile ) {
         $inFName = "products.csv";
     }
 
-if (($inHandle = @fopen($inFName, "r")) !== FALSE) {
+
+    if ((file_exists($inFName) == TRUE) && (($inHandle = @fopen($inFName, "r")) !== FALSE)) {
     //read header row
     //fgetcsv($handle,600);
     echo
-        "<h1> $inFName </h1>
-        <table class=\"table table-striped\">
+        "
+        <div id=\"CSVTable\">
+        <h1>$inFName</h1>
+        <table class=\"table table-condensed table-bordered\">
         <thead>
         <tr>";
     $data = fgetcsv($inHandle,600);
@@ -236,14 +319,26 @@ if (($inHandle = @fopen($inFName, "r")) !== FALSE) {
             <td>".$data[4]."</td>
             </tr>";
     }
-    echo "</tbody></table>";
-
-    
+    echo "</tbody></table></div>";
     fclose($inHandle);
+
+   
+        echo "
+            <div class=\"alert alert-success fade in log-msg\" id=\"logMsg\">
+                <a href=\"#\" class=\"close \" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+                <strong>Success!</strong> {$inFName} has been loaded!
+            </div>";
+    
+
 }else{
     //file did not open
-    echo "<br>Error opening $inFName<br>";
+    echo " 
+            <div class=\"alert alert-danger fade in log-msg\" id=\"logMsg\">
+                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+                <strong>Failure!</strong> {$inFName} could not be loaded! 
+            </div>"; 
 }
+
 }
 
 

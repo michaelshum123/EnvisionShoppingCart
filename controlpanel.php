@@ -1,65 +1,11 @@
 <?php
 
 //require 'controlpanelback.php';
-
+require 'connect.php';
 print_r($_POST);
 print_r($_GET);
-/*
-//init vars
-$inFName = "";
-$sql = "";
 
-if( isset($_GET['pidToDelete'])) {
-    // sql to delete a record 
-    $sql = "DELETE FROM ProductTable WHERE id=".$_GET['pidToDelete'];
-     
-    if ($conn->query($sql) === TRUE) {
-      echo "Record deleted successfully"; // REPLACE WITH BOOTSTRAP ALERT
-    } else {
-      echo "Error deleting record: " . $conn->error; // rePLACE WITH BOOTSTRAP ALERT
-    }
-}
-
-// open input csv file
-if (isset($_POST['inFile']) && strlen($_POST['inFile']) != 0 )
-{
-    $inFName = $_POST["inFile"];
-} else {
-    $inFName = "products.csv";
-}
-
-//<!--write data from db to csv-->
-$sql = "SELECT id, name, descrip, quantity, price, descID FROM ProductTable";
-$result = $connection->query($sql);
-
-if( isset($_POST['dbToCSV']) && strlen($_POST['CSVoutFile'])!= 0 && $result->num_rows > 0 ){
-    $outFName = $_POST['CSVoutFile'];
-    $list = array(
-        array('id', 'name','descrip', 'quantity', 'price', 'descID')
-    );
-    while($row = $result->fetch_assoc()) {
-
-        $list[] = array($row["id"], $row["name"] , $row["descrip"] ,
-        $row["quantity"] ,  $row["price"] , $row["descID"]);
-
-    }
-
-    //reset for next fetch_assoc()
-    $result->data_seek(0);
-    
-    if (($outHandle = @fopen($outFName, "w")) !== FALSE) {
-        foreach ($list as $line)
-        {
-            fputcsv($outHandle,$line);
-        }
-        fclose($outHandle);
-    }else{
-        //output cannot open file, write to csv failed
-    }
-    //$list->free_result();
-} 
-*/
-
+//TODO: ADD INDIVIDUAL DB ADD, DB EDIT+SAVE
 ?>
 
 <html>
@@ -69,68 +15,112 @@ if( isset($_POST['dbToCSV']) && strlen($_POST['CSVoutFile'])!= 0 && $result->num
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
 <script type="text/javascript">
+
+window.msgid = 0;
+
 // DO ALL BUTTON JQUERY/JS ACTIONS HERE
 $(document).ready(function(){
-    
+
+    showProductTable();
+    showCSVTable("", false);
     $("#dbToCSVButton").mouseup( 
         function () { 
             alert("dbToCSV!!");
             //exportDB(document.getElementById('dbToCSVfname').value) } 
         });
-        /*function(){
-        $(this).after("<p style='color:green;'>Mouse button released.</p>");
 
-    });*/
 
     $("#CSVtoDBButton").mouseup( 
         function () { 
-            alert("CSVtoDB!!");
-            //importCSV() } 
+            // pass through h1 elem of CSVTable, aka filename
+            if( document.getElementById("owRB").checked || document.getElementById("skipRB").checked ) {
+                alert($("#CSVTable > h1").text() + " radio:" + document.getElementById("skipRB").checked);
+                importCSV( $("#CSVTable > h1").text(), document.getElementById("skipRB").checked);
+            } else {
+                alert("radioboxes are broken!");
+            }
         });
-    $("#CSVButton").click( 
+    $("#CSVButton").mouseup( 
         function () { 
-            alert("CSV!!");
-            //refreshCSV(document.getElementById('CSVfname').value) 
+            //alert("CSV!!");
+            refreshCSV( document.getElementById('CSVfname').value, true); 
         });
-    $("#DaButton").click(
+    $("#DaButton").mouseup(
         function() {
             $.get("controlpanelback.php",{d: 3}, 
             function(data, status) {
                 if(status == "success") {
-                    
-                    var logId = $(data).filter(".log-msg").attr("id");
-                    logId = "#" + logId;
-                    alert($(data).filter(".log-msg") + "logId: "+ logId);
-                    $("#logBox").prepend( $(data).filter(".log-msg").addClass('hidden') ); 
-                    $(logId).hide();
-                    $(logId).removeClass('hidden');
-                    $(logId).show(1000);
+                    addLogMsg(data);
                 } else {
-                    alert("Something went wrong when loading!\nStatus: "+status);
+                    alert("Something went wrong when loading back!\nStatus: "+status);
                 }
 
             });
+            
         });
 
 
 
 });
 
+//adds a log msg, sets unique id, and makes it fade in lol
+function addLogMsg(data) {
+//add unique val to id
+    var logId = "logMsg" + window.msgid.toString();
+    //add hidden and set id to unique val  
+    var html = $(data).filter(".log-msg").addClass('hidden').prop("id", logId);
+
+    //add to logBox
+    $("#logBox").prepend( html ); 
+                    //make logId a selector for jquery
+    logId = "#" + logId;
+                    //hide by logId
+    //all this just to fadein
+    $(logId).hide();
+    $(logId).removeClass('hidden');
+    $(logId).show(500);
+    window.msgid++;
+}
+
+//product table
+
+function showProductTable() {
+    $.get("controlpanelback.php",{d: 1}, 
+        function(data, status) {
+            if(status == "success") {
+                $("#productTable").html(data);
+            } else {    
+                alert("Something went wrong when loading back!\nStatus: "+status);
+            }
+
+        });
+
+}
+
+//loads CSV table
+//if fn is set, then a logMsg will appear
+//if fn is not set, no msg will appear (assumes inital loading)
+function showCSVTable(fn, printLog) {
+    $.get("controlpanelback.php",{d: 2, 'CSVfname': fn}, 
+        function(data, status) {
+            if(status == "success") {
+                // add return'd CSVTable to this CSVTable
+                $("#CSVTable").html( $(data).filter("#CSVTable").html() );
+                if(printLog == true) {
+                    addLogMsg(data); // if fn is empty aka nothing, load default products.csv
+                } 
+            } else {    
+                alert("Something went wrong when loading back!\nStatus: "+status);
+            }
+
+        });
+}
 
 function refreshCSV(fn) {
     var response = confirm("Are you sure you want to load " +fn+" ?");
      if (response == true) {
         //confirm, refresh CSV Table using jquery AJAX
-        $.get("controlpanelback.php",{d: 2, CSVfname: fn}, 
-            function(data, status) {
-                if(status == "success") {
-                    $("#logBox").prepend( $(data).filter("#logEvent") ); 
-                    $("#CSVTable").html( $(data).filter("CSVTable") );
-                } else {
-                    alert("Something went wrong when loading "+fn+" !\nStatus: "+status);
-                }
-
-            });
+        showCSVTable(fn,true);
     }
 }
 
@@ -155,7 +145,7 @@ function deleteProduct(pid) {
             function(data,status) {
                 if(status == "success") {
                     $("#logBox").prepend( $(data).filter("#logEvent") ); 
-                    $("#CSVTable").html( $(data).filter("CSVTable") );
+                    $("#CSVTable").html( $(data).filter("#CSVTable") );
                 } else {
                     alert("Something went wrong when communicating with backend when deleting\n \
                             Product Name: " + document.getElementById("pNameToDelete").value + "\n \
@@ -167,10 +157,23 @@ function deleteProduct(pid) {
     } 
 }
 
-function importCSV() {
+function importCSV(fn, dupCheck) {
     var response = confirm("Are you sure you want to import current CSV to DB?");
     if(response == true) {
-        //confirmed start XMLHTTP Request
+        //confirmed, start ajax
+        alert("filename:" + fn + " dup: " + dupCheck);
+        $.get("controlpanelback.php",{f: 1, 'CSVfname': fn, duplicate: dupCheck}, 
+            function(data, status) {
+                if(status == "success") {
+                    alert(data);
+                    showProductTable();
+                    addLogMsg(data);
+                } else {
+                    alert("Something went wrong when loading "+fn+" !\nStatus: "+status);
+                }
+
+            });
+        
     } else {
         //do nothing
     }
@@ -208,56 +211,7 @@ function exportDB(fn) {
 display db table
 -->
 
-<?php
-/*
-if ($result->num_rows > 0) {
-    echo
-        "
-        <h1>Product Table</h1>
-        <table class=\"table table-striped\">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>CateID</th>
-                <th>Delete</th>
-            </tr>
-        </thead>
-        <tbody>";
 
-    // output data of each row
-    while($row = $result->fetch_assoc()) {
-        
-        echo
-            "<tr";
-        if( $row['quantity'] == 0 ) 
-            echo " class=\"danger\"";
-        echo ">
-            <td>".$row['id']."</td>
-            <td>".$row['name']."</td>
-            <td>".$row['descrip']."</td>
-            <td>".$row['quantity']."</td>
-            <td>".$row['price']."</td>
-            <td>".$row['descID']."</td>
-            <td>
-            <form action=\"".htmlspecialchars($_SERVER['PHP_SELF'])."\" method=\"get\">
-            <input type=\"hidden\" name=\"pidToDelete\" value=".$row['id'].">
-            <input type=\"hidden\" name=\"pName\" value=\"".$row['name']."\">
-            <input type=\"submit\" value=\"X\"></form>      
-            </td>
-            </tr>";
-    }
-    echo "</tbody></table>";
-    $result->free_result();
-} else {
-    echo "0 results";
-}
- */
-
-?>
 </div>
 <!--button: write data from db to csv for backup-->
 <div id="productTableForms">
@@ -273,66 +227,43 @@ if ($result->num_rows > 0) {
 </div>
 <!-- divider to make middle of page -->
 
-<div class="col-xs-6 text-center"> 
+<div class="col-xs-6"> 
 <div id="CSVTable">
-<?php
-/*
-if (($inHandle = @fopen($inFName, "r")) !== FALSE) {
-    //read header row
-    //fgetcsv($handle,600);
-    echo
-        "<h1> $inFName </h1>
-        <table class=\"table table-striped\">
-        <thead>
-        <tr>";
-    $data = fgetcsv($inHandle,600);
-    //print header + use for loop?
-    echo "<th>$data[0]</th>";
-    echo "<th>$data[1]</th>";
-    echo "<th>$data[2]</th>";
-    echo "<th>$data[3]</th>";
-    echo "<th>$data[4]</th>";
-    echo "</tr>
-        </thead>
-        <tbody>";
 
-    while (($data = fgetcsv($inHandle, 600)) !== FALSE) {
-       echo
-            "<tr>
-            <td>".$data[0]."</td>
-            <td>".$data[1]."</td>
-            <td>".$data[2]."</td>
-            <td>".$data[3]."</td>
-            <td>".$data[4]."</td>
-            </tr>";
-    }
-    echo "</tbody></table>";
-
-    
-    fclose($inHandle);
-}else{
-    //file did not open
-    echo "<br>Error opening $inFName<br>";
-}
-*/
-?>
 </div>
-<!--button: retrieve non-default file-->
-<br>
+
 <div id="CSVTableForms">
 <form>
 <strong>Load CSV file</strong><br>
+<small>If the filename entered is empty, the default file 'products.csv' will be loaded</small><br>
 <label for="CSVfname">Filename:</label>
 <input type="text" id="CSVfname">
 <input type="button" value="Load" id="CSVButton">
 </form>
+
 <br>
 
 <form>
 <strong>Import current/opened CSV to DB </strong><br>
-<label for="CSVtoDBfname">Filename:</label>
-<input type="text" id="CSVtoDBfname">
+
+Deal with duplicates by:<br>
+<small>
+Overwrite will replace items with the same name in the DB with new description, quantity, price, and category from the CSV file
+<br>
+Skip will simply leave same name items alone, completely skipping them
+</small>
+<br>
+<div class="text-center">
+<label class="radio-inline"><input type="radio" name="duplicateSetting" id="owRB"> Overwrite </label>
+
+<label class="radio-inline"><input type="radio" name="duplicateSetting" id="skipRB" checked> Skip</label>
+
+<!--<label for="CSVtoDBfname">Filename:</label>
+<input type="text" id="CSVtoDBfname">-->
+<br>
+
 <input type="button" value="Import" id="CSVtoDBButton">
+</div>
 </form>
 <br>
 <form>
