@@ -1,12 +1,8 @@
-<?php
 
-//require 'controlpanelback.php';
-require 'connect.php';
-print_r($_POST);
-print_r($_GET);
 
-//TODO: ADD INDIVIDUAL DB ADD, DB EDIT+SAVE
-?>
+<!--TODO: ADD INDIVIDUAL DB ADD, DB EDIT+SAVE, SET inputs to number, set input max chars-->
+
+
 
 <html>
 <head>
@@ -23,6 +19,7 @@ $(document).ready(function(){
 
     showProductTable();
     showCSVTable("", false);
+
     $("#dbToCSVButton").mouseup( 
         function () { 
             alert("dbToCSV!!");
@@ -43,6 +40,7 @@ $(document).ready(function(){
     $("#CSVButton").mouseup( 
         function () { 
             //alert("CSV!!");
+                alert($('[id^="modify-btn"]')[0].outerHTML);
             refreshCSV( document.getElementById('CSVfname').value, true); 
         });
     $("#DaButton").mouseup(
@@ -89,6 +87,86 @@ function showProductTable() {
         function(data, status) {
             if(status == "success") {
                 $("#productTable").html(data);
+
+                //if modify button is pressed, hide modify button and display Save/Discard Buttons, confirm
+                //also, change row textboxes to enabled
+                $('[id^=modify-btn]').click(
+                function (event) { 
+                    //grab id using substr, since modify-btn is constant # of chars
+                    var rowId = $(event.target.parentNode).attr("id").substring(11);
+
+                    var name = "#name-" + rowId;
+                    var descrip = "#descrip-" + rowId;
+                    var quantity = "#quantity-" + rowId;
+                    var price = "#price-" + rowId;
+                    var confirm = "#confirm-btn-" + rowId;
+                    var discard = "#discard-btn-" + rowId;
+                    //hide modify button, show confirm/discard
+                    $(event.target.parentNode).attr("style", "display: none");
+                    $(confirm).attr("style", "display: inline");
+                    $(discard).attr("style", "display: inline");
+                    //remove disabled properties if modify button been pressed
+                    $(name).removeAttr('disabled');
+                    $(descrip).removeAttr('disabled');
+                    $(quantity).removeAttr('disabled');
+                    $(price).removeAttr('disabled');
+                });
+                $('[id^=confirm-btn]').click(
+                function (event) {
+                    var rowId = $(event.target.parentNode).attr("id").substring(12);
+
+                    var name = "#name-" + rowId;
+                    var descrip = "#descrip-" + rowId;
+                    var quantity = "#quantity-" + rowId;
+                    var price = "#price-" + rowId;
+                    var confirm = "#confirm-btn-" + rowId;
+                    var discard = "#discard-btn-" + rowId;
+                    alert(rowId);
+
+                    //confirm everything is valid? 
+                    // confirm
+                    var result = confirm("Are you sure you want to discard these changes?");
+                    //if so, set everything back to placeholder vals
+                    if( result == true ) {
+                        //ajax command to save stuff?
+                        
+                        $(name).
+                        $.get("controlpanelback.php", {'f': 4, 'id': rowId, 'name':name, 'des':descrip, 'quan':quantity, 'price': price}, 
+                        function(data, status){
+                            addLogMsg(data);
+
+                    });
+                    } //else do nothing
+                    //hide buttons, show modify btn 
+                    
+                });
+                $('[id^=discard-btn]').click(
+                function (event) {
+                    var rowId = $(event.target.parentNode).attr("id").substring(12);
+
+                    var name = "#name-" + rowId;
+                    var descrip = "#descrip-" + rowId;
+                    var quantity = "#quantity-" + rowId;
+                    var price = "#price-" + rowId;
+                    var modifyBtn = "#modify-btn-" + rowId;
+                    var confirmBtn = "#confirm-btn-" + rowId;
+                    var discardBtn = "#discard-btn-" + rowId;
+                                  
+                    // confirm
+                    var result = confirm("Are you sure you want to discard these changes?");
+                    //if so, set everything back to placeholder vals
+                    if( result == true ) {
+                    $(name).attr('disabled',"").val($(name).attr('placeholder'));
+                    $(descrip).attr('disabled',"").val($(descrip).attr('placeholder'));
+                    $(quantity).attr('disabled',"").attr('value',$(quantity).attr('placeholder'));
+                    $(price).attr('disabled',"").attr('value',$(price).attr('placeholder'));                    
+                    $(confirmBtn).attr("style", "display: none");
+                    $(discardBtn).attr("style", "display: none");
+                    $(modifyBtn).attr("style", "display: block");
+                    } //else do nothing
+                    //hide buttons, show modify btn  
+
+                });
             } else {    
                 alert("Something went wrong when loading back!\nStatus: "+status);
             }
@@ -161,11 +239,11 @@ function importCSV(fn, dupCheck) {
     var response = confirm("Are you sure you want to import current CSV to DB?");
     if(response == true) {
         //confirmed, start ajax
-        alert("filename:" + fn + " dup: " + dupCheck);
+        
         $.get("controlpanelback.php",{f: 1, 'CSVfname': fn, duplicate: dupCheck}, 
             function(data, status) {
                 if(status == "success") {
-                    alert(data);
+                    
                     showProductTable();
                     addLogMsg(data);
                 } else {
@@ -205,7 +283,7 @@ function exportDB(fn) {
 
 <div class="container-fluid">
 <div class="row">
-<div class="col-xs-6 text-center">
+<div class="col-xs-6">
 <div id="productTable">
 <!--
 display db table
@@ -215,15 +293,16 @@ display db table
 </div>
 <!--button: write data from db to csv for backup-->
 <div id="productTableForms">
-<form>
+<form class="form-inline">
+<div class="form-group">
 <strong>Export Product Table to CSV file</strong>
 <br>
 <label for="dbToCSVfname">Filename:</label>
 <input type="text" id="dbToCSVfname">
-<input type="button" value="Export" id="dbToCSVButton">
-</form>
+<input type="button" class="btn btn-default btn-sm" value="Export" id="dbToCSVButton">
 </div>
-
+</div>
+</form>
 </div>
 <!-- divider to make middle of page -->
 
@@ -233,44 +312,43 @@ display db table
 </div>
 
 <div id="CSVTableForms">
-<form>
+<form class="form-inline">
+<div class="form-group">
 <strong>Load CSV file</strong><br>
 <small>If the filename entered is empty, the default file 'products.csv' will be loaded</small><br>
 <label for="CSVfname">Filename:</label>
 <input type="text" id="CSVfname">
-<input type="button" value="Load" id="CSVButton">
-</form>
+<input type="button" class="btn btn-default btn-sm" value="Load" id="CSVButton">
+</div>
 
 <br>
+<br>
 
-<form>
+<div class="form-group">
 <strong>Import current/opened CSV to DB </strong><br>
 
-Deal with duplicates by:<br>
-<small>
+<span class="help-block">
+How to deal with duplicates? 
+<br>
 Overwrite will replace items with the same name in the DB with new description, quantity, price, and category from the CSV file
 <br>
 Skip will simply leave same name items alone, completely skipping them
-</small>
-<br>
-<div class="text-center">
+
+</span>
+
 <label class="radio-inline"><input type="radio" name="duplicateSetting" id="owRB"> Overwrite </label>
-
-<label class="radio-inline"><input type="radio" name="duplicateSetting" id="skipRB" checked> Skip</label>
-
-<!--<label for="CSVtoDBfname">Filename:</label>
-<input type="text" id="CSVtoDBfname">-->
-<br>
-
-<input type="button" value="Import" id="CSVtoDBButton">
+<label class="radio-inline"><input type="radio" name="duplicateSetting" id="skipRB" checked> Skip </label>
+<input type="button" class="btn btn-default btn-sm" value="Import" id="CSVtoDBButton">
 </div>
-</form>
+
 <br>
+
 <form>
 <strong>button </strong><br>
 <label for="CSVtoDBfname">Filename:</label>
 <input type="text" id="CSVtoDBfname">
 <input type="button" value="Import" id="DaButton">
+</form>
 </form>
 </div>
 

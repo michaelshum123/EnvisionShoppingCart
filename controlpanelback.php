@@ -32,8 +32,8 @@ foreach( $_GET as $cmd => $cmdVal ) {
         }
         if( $cmdVal == 3 ) {
             echo  "
-            <div class=\"alert alert-success log-msg\" id=\"msg\">
-                <a href=\"#\" class=\"close fade in\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-success log-msg' id='msg'>
+                <a href='#' class='close fade in' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> potatopotato clafairy poop 
             </div>";
             
@@ -72,14 +72,14 @@ function deletePid($pidToDelete) {
     
         if ($connection->query($sql) === TRUE) {
             echo "
-            <div class=\"alert alert-success log-msg\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-success log-msg' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> Product ID $pidToDelete has been deleted! 
             </div>"; 
         } else {
             echo "
-            <div class=\"alert alert-danger log-msg\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-danger log-msg' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> Product ID $pidToDelete could not be deleted! $conn->error 
             </div>";
         }
@@ -125,8 +125,8 @@ function dbToCSV( $outFile ) {
     if($success == TRUE)
     {
         echo "
-            <div class=\"alert alert-success\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-success' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> Database has been saved to ${outFile}! 
             </div>"; 
 
@@ -134,8 +134,8 @@ function dbToCSV( $outFile ) {
     } else {
          //error: strlen == 0 or result num_rows > 0  OR fopen error
     echo "
-            <div class=\"alert alert-danger\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-danger' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> Database could not be saved to ${outFile}! 
             </div>"; 
 
@@ -197,8 +197,8 @@ function CSVToDb( $inFile, $owOrSkip ) {
 
    
         echo "
-            <div class=\"alert alert-success fade in log-msg\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-success fade in log-msg' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> {$inFile} has been imported!
             </div>";
     
@@ -206,8 +206,8 @@ function CSVToDb( $inFile, $owOrSkip ) {
     }else{
     //file did not open
     echo " 
-            <div class=\"alert alert-danger fade in log-msg\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-danger fade in log-msg' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Failure!</strong> {$inFile} could not be loaded! Nothing has been imported.
             </div>"; 
     }
@@ -226,12 +226,12 @@ function displayProductTable() {
     $sql = "SELECT id, name, descrip, quantity, price, descID FROM ProductTable"; 
     $result = $connection->query($sql);
     
-    echo "<div id=\"productTable\">";
+    echo "<div id='productTable'>";
 if ($result->num_rows > 0) {
     echo
-        "
+        '
         <h1>Product Table</h1>
-        <table class=\"table table-condensed table-bordered\">
+        <table class="table table-condensed table-bordered">
         <caption>Product Table</caption>
         <thead>
             <tr>
@@ -242,9 +242,10 @@ if ($result->num_rows > 0) {
                 <th>Price</th>
                 <th>CateID</th>
                 <th>Delete</th>
+                <th>Modify</th>
             </tr>
         </thead>
-        <tbody>";
+        <tbody>';
 
     // output data of each row
     while($row = $result->fetch_assoc()) {
@@ -252,19 +253,40 @@ if ($result->num_rows > 0) {
         echo
             "<tr";
         if( $row['quantity'] == 0 ) 
-            echo " class=\"danger\"";
+            echo " class='danger'";
         echo ">
-            <td>".$row['id']."</td>
-            <td>".$row['name']."</td>
-            <td>".$row['descrip']."</td>
-            <td>".$row['quantity']."</td>
-            <td>".$row['price']."</td>
-            <td>".$row['descID']."</td>
-            <td class=\"text-center\">
-            <form action=\"".htmlspecialchars($_SERVER['PHP_SELF'])."\" method=\"get\">
-            <input type=\"hidden\" name=\"pidToDelete\" value=".$row['id'].">
-            <input type=\"hidden\" name=\"pNameToDelete\" value=\"".$row['name']."\">
-            <input type=\"submit\" value=\"&times;\"></form>      
+            <td>{$row['id']}</td>
+            <td>
+                <input type='text' style='width: 90px; height: 22px;' id='name-{$row['id']}' value='{$row['name']}' placeholder='{$row['name']}' disabled>    
+            </td>
+            <td>
+                <input type='text' style='width: 90px; height: 22px;' id='descrip-{$row['id']}' value='{$row['descrip']}' placeholder='{$row['descrip']}' disabled> 
+            </td>
+            <td>
+                <input type='text' style='width: 40px; height: 22px;' id='quantity-{$row['id']}' value='{$row['quantity']}' placeholder='{$row['quantity']}' disabled>
+            </td>
+            <td>
+                <input type='text' style='width: 50px; height: 22px;' id='price-{$row['id']}' value='{$row['price']}' placeholder='{$row['price']}' disabled>
+            </td>
+            <td>
+            {$row['descID']}
+            </td>
+
+            <td class='text-center'> 
+            <a href='#'>
+                <span class='glyphicon glyphicon-remove'></span>
+            </a>   
+            </td>
+            <td class='text-center'>
+            <a href='#' id='modify-btn-{$row['id']}' >
+                <span class='glyphicon glyphicon-cog'></span>
+            </a>
+            <a href='#' id='confirm-btn-{$row['id']}' style='display: none'>
+                <span class='glyphicon glyphicon-ok-sign' ></span>
+            </a>
+            <a href='#' id='discard-btn-{$row['id']}' style='display: none'>
+                <span class='glyphicon glyphicon-remove-sign'></span>
+            </a>
             </td>
             </tr>";
     }
@@ -293,9 +315,9 @@ function displayCSV( $inFile ) {
     //fgetcsv($handle,600);
     echo
         "
-        <div id=\"CSVTable\">
+        <div id='CSVTable'>
         <h1>$inFName</h1>
-        <table class=\"table table-condensed table-bordered\">
+        <table class='table table-condensed table-bordered'>
         <thead>
         <tr>";
     $data = fgetcsv($inHandle,600);
@@ -324,8 +346,8 @@ function displayCSV( $inFile ) {
 
    
         echo "
-            <div class=\"alert alert-success fade in log-msg\" id=\"logMsg\">
-                <a href=\"#\" class=\"close \" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-success fade in log-msg' id='logMsg'>
+                <a href='#' class='close ' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Success!</strong> {$inFName} has been loaded!
             </div>";
     
@@ -333,8 +355,8 @@ function displayCSV( $inFile ) {
 }else{
     //file did not open
     echo " 
-            <div class=\"alert alert-danger fade in log-msg\" id=\"logMsg\">
-                <a href=\"#\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">&times;</a>
+            <div class='alert alert-danger fade in log-msg' id='logMsg'>
+                <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
                 <strong>Failure!</strong> {$inFName} could not be loaded! 
             </div>"; 
 }
