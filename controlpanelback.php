@@ -1,16 +1,10 @@
 <?php
 // Create connection
 require 'connect.php';
-//init vars
-
-//$sql = "";
-//$result = "";
-
-//$sql = "SELECT id, name, descrip, quantity, price, descID FROM ProductTable"; 
-//$result = $connection->query($sql);
+//TODO: change SQL requests to parameterized stuff, change Get things to htmlspecialchars(),
+//do SERVER SIDED CHECKS in the methods so error msgs can be relayed effectively
 
 //command flags processed here
-
 foreach( $_GET as $cmd => $cmdVal ) {
     $cmdVal =  htmlspecialchars($cmdVal);
     
@@ -25,7 +19,7 @@ foreach( $_GET as $cmd => $cmdVal ) {
         // display csv table from filename
         if( $cmdVal == 2 ) {
             $fname = "";
-            if(isset($_GET['CSVfname']) == TRUE) {
+            if(isset($_GET['CSVfname'])) {
                 $fname =  $_GET['CSVfname'] ;
             }
             displayCSV($fname);   
@@ -50,13 +44,22 @@ foreach( $_GET as $cmd => $cmdVal ) {
         if( $cmdVal == 2 ) {
             dbToCSV( $_GET['outFile'] ); // SANITIZE HERE
         }
-        break;
+        
         if( $cmdVal == 3 ) {
+            //single delete
             //delete item in db by pid
-            deletePid( $_GET['pidToDelete'] ); // SANiTIZE HERE
+            //deletePid( $_GET['pidToDelete'] ); // SANiTIZE HERE
+        
+            deletePid($_GET['pidToDelete']);
+        }
+        
+        if( $cmdVal == 4 ) {
+            // single entry update
+            //'id': rowId, 'name':name, 'des':descrip, 'quan':quantity, 'price': price
+            //seUpdate($_GET['id'], )
+            echo "potato";
         }
         break;
-
     default:
         break;
     }
@@ -65,29 +68,48 @@ foreach( $_GET as $cmd => $cmdVal ) {
 
 
 // do functions here
-//TODO
+
 function deletePid($pidToDelete) {
         global $connection;
-        $sql = "DELETE FROM ProductTable WHERE id=".$_GET['pidToDelete']; // TODO: Change to prepared statement
+        $sql = "DELETE FROM ProductTable WHERE id=".$pidToDelete; // TODO: Change to prepared statement
     
         if ($connection->query($sql) === TRUE) {
             echo "
             <div class='alert alert-success log-msg' id='logMsg'>
                 <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
-                <strong>Success!</strong> Product ID $pidToDelete has been deleted! 
+                <strong>Success!</strong> ID $pidToDelete has been deleted! 
             </div>"; 
         } else {
             echo "
             <div class='alert alert-danger log-msg' id='logMsg'>
                 <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
-                <strong>Success!</strong> Product ID $pidToDelete could not be deleted! $conn->error 
+                <strong>Success!</strong> ID $pidToDelete could not be deleted! $connection->error 
             </div>";
         }
-        $idCount++;
+        
+}
+
+//TOOD: server sided form validation, parameterization
+//single entry update
+function seUpdate($idToUpdate, $n, $d, $q, $p ) {
+    global $connection;
+
+    //check if $id is in DB
+    //check if name < maxchars
+    //check if $d < maxChars
+    //check if $q is a number
+    //check if $p is decimal(4,2)
+
+    $sql = "UPDATE ProductTable
+            SET name={$n} descrip='{$d}', quantity={$q}, price={$p}
+            WHERE id={$idToUpdate}";
+    echo $sql . "\n";
+    //$result = $connection->query($sql);
+
+
 }
 
 
-//TODO
 function dbToCSV( $outFile ) {
     global $connection;
     $success = TRUE;
@@ -95,7 +117,7 @@ function dbToCSV( $outFile ) {
     $result = $connection->query($sql);
     //<!--write data from db to csv-->
 
-    if( strlen($outFile)!= 0 && $result->num_rows > 0 ){
+if( strlen($outFile)!= 0 && $result->num_rows > 0 ){
     
     $list = array(
         array('id', 'name','descrip', 'quantity', 'price', 'descID')
@@ -115,12 +137,10 @@ function dbToCSV( $outFile ) {
         //output cannot open file, write to csv failed
         $success = FALSE;
     }
-    
-
 } else {
     $success = FALSE;
         //error: strlen == 0 or result num_rows > 0 !!
-    }
+}
 
     if($success == TRUE)
     {
@@ -136,14 +156,15 @@ function dbToCSV( $outFile ) {
     echo "
             <div class='alert alert-danger' id='logMsg'>
                 <a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a>
-                <strong>Success!</strong> Database could not be saved to ${outFile}! 
+                <strong>Success!</strong> Database could not be saved to ${outFile}! DB could be empty, filename could be empty, or there are no file permissions
             </div>"; 
 
     }
-    
-    //free variables!! 
-    //$result->free();
-    //$sql->free();
+
+    //free me!!
+    unset($list);
+    $result->free();
+
 }
 
 
@@ -232,7 +253,6 @@ if ($result->num_rows > 0) {
         '
         <h1>Product Table</h1>
         <table class="table table-condensed table-bordered">
-        <caption>Product Table</caption>
         <thead>
             <tr>
                 <th>ID</th>
@@ -257,34 +277,34 @@ if ($result->num_rows > 0) {
         echo ">
             <td>{$row['id']}</td>
             <td>
-                <input type='text' style='width: 90px; height: 22px;' id='name-{$row['id']}' value='{$row['name']}' placeholder='{$row['name']}' disabled>    
+                <input type='text' maxlength='255' style='width: 90px; height: 22px;' id='name-{$row['id']}' value='{$row['name']}' placeholder='{$row['name']}' disabled>    
             </td>
             <td>
-                <input type='text' style='width: 90px; height: 22px;' id='descrip-{$row['id']}' value='{$row['descrip']}' placeholder='{$row['descrip']}' disabled> 
+                <input type='text' maxlength='255' style='width: 90px; height: 22px;' id='descrip-{$row['id']}' value='{$row['descrip']}' placeholder='{$row['descrip']}' disabled> 
             </td>
             <td>
-                <input type='text' style='width: 40px; height: 22px;' id='quantity-{$row['id']}' value='{$row['quantity']}' placeholder='{$row['quantity']}' disabled>
+                <input type='number' style='width: 40px; height: 22px;' id='quantity-{$row['id']}' value='{$row['quantity']}' placeholder='{$row['quantity']}' disabled>
             </td>
             <td>
-                <input type='text' style='width: 50px; height: 22px;' id='price-{$row['id']}' value='{$row['price']}' placeholder='{$row['price']}' disabled>
+                <input type='number' step='0.01' style='width: 50px; height: 22px;' id='price-{$row['id']}' value='{$row['price']}' placeholder='{$row['price']}' disabled>
             </td>
             <td>
             {$row['descID']}
             </td>
 
             <td class='text-center'> 
-            <a href='#'>
+            <a href='#' id='delete-btn-{$row['id']}' >
                 <span class='glyphicon glyphicon-remove'></span>
             </a>   
             </td>
             <td class='text-center'>
-            <a href='#' id='modify-btn-{$row['id']}' >
+            <a href='#modify-btn-{$row['id']}' id='modify-btn-{$row['id']}' >
                 <span class='glyphicon glyphicon-cog'></span>
             </a>
             <a href='#' id='confirm-btn-{$row['id']}' style='display: none'>
                 <span class='glyphicon glyphicon-ok-sign' ></span>
             </a>
-            <a href='#' id='discard-btn-{$row['id']}' style='display: none'>
+            <a href='#discard-btn-{$row['id']}' id='discard-btn-{$row['id']}' style='display: none'>
                 <span class='glyphicon glyphicon-remove-sign'></span>
             </a>
             </td>
