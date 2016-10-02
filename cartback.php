@@ -102,7 +102,7 @@ function displayCartTable() {
    
     return FALSE;
   }
-
+ $total = 0.00;
   foreach ($_SESSION['cart'] as $cartRow) {
     //consider doing a huge || for id?? 
     $sql = "SELECT name, price FROM ProductTable WHERE id={$cartRow[0]}"; //TODO: PARAMETERIZE
@@ -121,11 +121,15 @@ function displayCartTable() {
             </td>
           </tr>
             "; 
-
+    $total += (float) $resultArray[1] * (float) $cartRow[1];
+  
   }
 
   echo '</table>';
-	echo '</div>';
+  echo '<div class="well text-center col-xs-offset-8 col-xs-4">';
+  echo "<b>Total: </b> {$total} ";
+  echo '</div>';
+  echo '</div>';
 
 
   unset($result);
