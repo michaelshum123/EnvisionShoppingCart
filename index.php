@@ -1,39 +1,37 @@
 <!--NAVBAR-->
-<?php
-session_start();
-$_SESSION['wow'][] = array(1, 100);
 
-$_SESSION['wow'][] = array(2, 200);
-
-$_SESSION['wow'][] = array(3, 1);
-
-$_SESSION['wow'][] = array(4, 100);
-
-$_SESSION['wow'][] = array(5, 100);
-
-$_SESSION['wow'][] = array(6, 100);
-
-$_SESSION['wow'][] = array(7, 100);
-
-$_SESSION['wow'][] = array(8, 100);
-var_dump($_SESSION['wow'][4][1]);
-echo '<br>';
-var_dump(array_search(5,array_column($_SESSION['wow'],0)));
-
-
-
-
-
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <title>Bootstrap Case</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="bootstrap.min.css">
-  <script src="jquery.min.js"></script>
-  <script src="bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+  <script>
+$(document).ready(function() {
+  //add to cart buttons
+
+});
+//id='quantity-input-{$row['id']}'> </td>
+
+$(document).on('click', '[id^=add-to-cart-btn]', function( event ) {
+  var rowId = $(event.target).attr('id').substring(16);//.attr("id");
+  var quantity = $("#quantity-input-"+rowId.toString()).val();
+  
+  $.get('cartback.php', {'f': 1, 'pid': rowId, 'q': quantity}, function(data, status) {
+    alert(data);
+  });
+});
+
+
+
+  </script>
+}
+}
+}
 </head>
 <body>
 
@@ -229,6 +227,8 @@ var_dump(array_search(5,array_column($_SESSION['wow'],0)));
                   <th>Quantity</th>
                   <th>Price</th>
                   <th>CateID</th>
+                  <th>Quantity Wanted</th>
+                  <th>Add to Cart</th>
               </tr>
           </thead>
           <tbody>";
@@ -243,6 +243,8 @@ var_dump(array_search(5,array_column($_SESSION['wow'],0)));
               <td>".$row["quantity"]."</td>
               <td>".$row["price"]."</td>
               <td>".$row["descID"]."</td>
+              <td> <input type='number' id='quantity-input-{$row['id']}'> </td>
+              <td> <input type='button' id='add-to-cart-btn-{$row['id']}' value='Add To Cart'> </td>
               </tr>";
       }
       echo "</tbody></table>";
